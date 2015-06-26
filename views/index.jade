@@ -11,14 +11,29 @@ html
     |     
     link(rel='stylesheet', type='text/css', href='/stylesheets/style.css')
   body
-    //#modal.ui.model
-    //  .header
-    //    form.ui.form
-    //      .ui.action.input
-    //        input(type='text', placeholder='Enter your full name here...', dir='auto')
-    //        input(type='text', placeholder='Enter your username here...', dir='auto')
-    //        button.ui.green.icon.button(type='submit')
     #container.ui.grid
+      #modal.ui.modal
+          i.close.icon
+          .header
+              | Modal Title
+          .content
+              .description
+                  form.ui.form.segment
+                      .field
+                          .label
+                              | Full Name
+                          input(type='text', placeholder='Enter your full name here...', dir='auto')
+
+                      .field
+                          .label
+                              | Username
+                          input(type='text', placeholder='Enter your username here...', dir='auto')
+
+                      //button.ui.green.icon.button(type='submit')
+                      //    | Send Information
+                      .actions
+                          //.ui.button Cancel
+                          .ui.button(type='submit', style="float: left;") OK
       #friends-list.five.wide.column
         #user-info.ui.raised.stacked.segment
           h2.ui.icon.center.aligned.header
