@@ -8,12 +8,12 @@ var http = require('http');
 var server = http.createServer(app);
 var path = require('path');
 
-//var io = require('socket.io')(http);
+var io = require('socket.io')(http);
 
 io = require('socket.io').listen(server);
 
-//var socket = io.listen(1223, "1.2.3.4");
 
+//var socket = io.listen(1223, "1.2.3.4");
 
 server.listen(3000);
 console.log("listening on 3000");
@@ -31,38 +31,50 @@ function User() {
 }
 
 function Message(){
-    var from;
-    var to;
+    var from_username;
+    var from_full_name;
+    var to_username;
+    var to_full_name;
     var text;
     var time;
 }
 
-var messages = {};
+var messages = new Array;
 var users = {};
+
+app.get('/', function(req, res){
+    res.render('index.jade', {
+
+    });
+});
 
 io.sockets.on('connection', function(client){
     var usr = new User();
-    var target_user_socket;
-
-    app.get('/', function(req, res){
-        res.render('index.jade', {
-
-        });
-    });
+    var target_user;
+    var target_user_id;
 
     console.log('a user connected');
 
     client.on('target message', function(target){
         for(var i = 0 ; i < _.keys(users).length ; i++) {
             if(users[_.keys(users)[i]].username == target){
-                target_user_socket = users[_.keys(users)[i]].socket;
+                target_user = users[_.keys(users)[i]];
+                target_user_id = _.keys(users)[i];
                 break;
             }
         }
     });
 
-    client.on('chat message', function(msg){
-        target_user_socket.emit('chat message', msg);
+    client.on('chat message', function(message){
+        var mymsg = {};//new Message();
+        mymsg.from_username = users[client.id].username;//users[client.id];
+        mymsg.from_full_name = users[client.id].full_name;//users[client.id];
+        mymsg.to_username = target_user.username;
+        mymsg.to_full_name = target_user.full_name;
+        mymsg.text = message;
+        mymsg.time = new Date();
+        messages.push(mymsg);
+        target_user.socket.emit('chat message', mymsg);
     });
 
     client.on('add friend', function(name){
@@ -133,12 +145,17 @@ io.sockets.on('connection', function(client){
         //}
         console.log('user disconnected');
     });
+
+    client.on('error', function(){
+        console.log("ERRRO");
+        console.log(arguments);
+    })
 });
+
 
 app.set('views', path.join(__dirname, 'views'));
 
 app.set('view engine', 'jade');
 app.use(express.static(path.join(__dirname, 'public')));
-
 
 
