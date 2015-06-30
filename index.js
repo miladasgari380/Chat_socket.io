@@ -82,9 +82,13 @@ io.sockets.on('connection', function(client){
         var me = new temp_friend();
         me.full_name = users[client.id].full_name;
         me.username = users[client.id].username;
-        target_user.friends.push(me);
+        for(var i = 0 ; i < _.keys(users).length ; i++) {
+            if(users[_.keys(users)[i]].username == target_user.username) {
+                users[_.keys(users)[i]].friends.push(me);
+                console.log("add to target friends successful");
+            }
+        }
         target_user.socket.emit('add friend success', me);
-
         client.emit('chat message', mymsg);
         target_user.socket.emit('chat message', mymsg);
     });
