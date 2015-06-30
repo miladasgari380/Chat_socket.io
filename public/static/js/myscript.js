@@ -42,7 +42,7 @@ $('#add_user').keypress(function(e){
 
 socket.on('chat message', function(msg){
     console.log("Chat message: "+msg.text);
-    $('#messages .ui.minimal.comments').append("<div class='comment'><a class='avatar'><img src="+"static/avatars/"+msg.from_username+".jpg"+"/></a><div class='content'><a class='author'>"+msg.from_full_name+"</a><div class='metadata'><span class='date'>"+msg.time+"</span></div><div class='text'>"+msg.text+"</div></div></div>");
+    $('#messages .ui.minimal.comments').append("<div class='comment'><a class='avatar'><img src="+"static/avatars/"+msg.from_username+".jpg"+"></a><div class='content'><a class='author'>"+msg.from_full_name+"</a><div class='metadata'><span class='date'>"+msg.time+"</span></div><div class='text'>"+msg.text+"</div></div></div>");
     //console.log(msg);
 });
 

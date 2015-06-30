@@ -73,6 +73,19 @@ io.sockets.on('connection', function(client){
         mymsg.text = message;
         mymsg.time = new Date();
         messages.push(mymsg);
+        //for (var i = 0 ; i < users[client.id].friends.length ; i++){
+        //    if(target_user.username == users[client.id].friends[i].username){
+        //        target_user.socket.emit('add friend success', users[client.id].friends[i]);
+        //        break;
+        //    }
+        //}
+        var me = new temp_friend();
+        me.full_name = users[client.id].full_name;
+        me.username = users[client.id].username;
+        target_user.friends.push(me);
+        target_user.socket.emit('add friend success', me);
+
+        client.emit('chat message', mymsg);
         target_user.socket.emit('chat message', mymsg);
     });
 
