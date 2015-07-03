@@ -49,7 +49,7 @@ socket.on('chat message', function(msg){
 socket.on('add friend success', function(friend){
     console.log("add friend success");
     console.log(new Date());
-    $('#roster').append("<a class='blue item'>"+friend.username+"</a>");
+    $('#roster').append("<a class='active green item'>"+friend.username+"</a>");
     $("#add_user").val('');
     return false;
 });
@@ -60,7 +60,7 @@ socket.on('info', function(userObj){
     $('#user-info.ui.raised.stacked.segment h2.ui.icon .content .sub.header').html('@'+userObj.username); //<----remained!!!
 });
 
-socket.on('friends list', function(friends){   // it remained, I don't know how khodemun ba khode jade ham mishe render kard
+socket.on('friends list', function(friends){   // it remained, for online and unread users
     for(var i = 0 ; i < friends.length ; i++) {
         $('#roster').append("<a class='blue item'>" + friends[i].username + "</a>");
     }

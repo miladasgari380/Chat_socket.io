@@ -79,16 +79,16 @@ io.sockets.on('connection', function(client){
         //        break;
         //    }
         //}
-        var me = new temp_friend();
-        me.full_name = users[client.id].full_name;
-        me.username = users[client.id].username;
-        for(var i = 0 ; i < _.keys(users).length ; i++) {
-            if(users[_.keys(users)[i]].username == target_user.username) {
-                users[_.keys(users)[i]].friends.push(me);
-                console.log("add to target friends successful");
-            }
-        }
-        target_user.socket.emit('add friend success', me);
+        //var me = new temp_friend();
+        //me.full_name = users[client.id].full_name;
+        //me.username = users[client.id].username;
+        //for(var i = 0 ; i < _.keys(users).length ; i++) {
+        //    if(users[_.keys(users)[i]].username == target_user.username) {
+        //        users[_.keys(users)[i]].friends.push(me);
+        //        console.log("add to target friends successful");
+        //    }
+        //}
+        //target_user.socket.emit('add friend success', me);
         client.emit('chat message', mymsg);
         target_user.socket.emit('chat message', mymsg);
     });
@@ -105,6 +105,18 @@ io.sockets.on('connection', function(client){
                 users[client.id].friends.push(friend);
                 notFind = true;
                 client.emit('add friend success', friend);
+
+                var me = new temp_friend();
+                me.full_name = users[client.id].full_name;
+                me.username = users[client.id].username;
+                for(var i = 0 ; i < _.keys(users).length ; i++) {
+                    if(users[_.keys(users)[i]].username == friend.username) {
+                        users[_.keys(users)[i]].friends.push(me);
+                        console.log("add to target friends successful");
+                        users[_.keys(users)[i]].socket.emit('add friend success', me);
+                        break;
+                    }
+                }
                 //console.log(users[client.id].friends[0].full_name);
                 break;
             }
@@ -121,16 +133,10 @@ io.sockets.on('connection', function(client){
         usr.socket = client;
         usr.friends = [];
         var hasUser = false;
-        var auth = false;
         for(var i = 0 ; i < _.keys(users).length ; i++){
             if(users[_.keys(users)[i]].username == userObj.username){
                 hasUser = true;
-                //console.log(users[_.keys(users)[i]].socket);
-                //console.log(usr.socket);
-                if(users[_.keys(users)[i]].socket == usr.socket){ // we must check that this user is authenticated user <---I don't know how!
-                    auth = true;
-                    client.emit('friends list', users[_.keys(users)[i]].friends);
-                }
+                client.emit('friends list', users[_.keys(users)[i]].friends);
                 break;
             }
         }
