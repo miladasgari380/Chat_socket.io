@@ -51,6 +51,7 @@ io.sockets.on('connection', function(client){
     var usr = new User();
     var target_user;
     var target_user_id;
+    var my_id;
 
     console.log('a user connected');
 
@@ -58,6 +59,7 @@ io.sockets.on('connection', function(client){
         for(var i = 0 ; i < _.keys(users).length ; i++) {
             if(users[_.keys(users)[i]].username == target){
                 target_user = users[_.keys(users)[i]];
+                console.log(target_user.username);
                 target_user_id = _.keys(users)[i];
                 break;
             }
@@ -66,8 +68,8 @@ io.sockets.on('connection', function(client){
 
     client.on('chat message', function(message){
         var mymsg = {};//new Message();
-        mymsg.from_username = users[client.id].username;//users[client.id];
-        mymsg.from_full_name = users[client.id].full_name;//users[client.id];
+        mymsg.from_username = users[my_id].username;//users[client.id];
+        mymsg.from_full_name = users[my_id].full_name;//users[client.id];
         mymsg.to_username = target_user.username;
         mymsg.to_full_name = target_user.full_name;
         mymsg.text = message;
@@ -136,20 +138,22 @@ io.sockets.on('connection', function(client){
         for(var i = 0 ; i < _.keys(users).length ; i++){
             if(users[_.keys(users)[i]].username == userObj.username){
                 hasUser = true;
+                users[_.keys(users)[i]].socket = client;
                 client.emit('friends list', users[_.keys(users)[i]].friends);
+                my_id = _.keys(users)[i];
                 break;
             }
         }
         if(!hasUser) { // if we have not this user
             //console.log("Client id: "+client.id);
             users[client.id] = usr;
+            my_id = client.id;
             //console.log(users[client.id]);
         }
 
         client.emit('info', userObj);  //socket just for a user, io for all connected users
 
         //io.sockets.emit("join_notife", usr.full_name + "has joined!");
-
 
         //for(var i = 0 ; i < users.length ; i++) {
         //    console.log(users[i].username);

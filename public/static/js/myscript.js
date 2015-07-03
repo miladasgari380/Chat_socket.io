@@ -62,7 +62,7 @@ socket.on('info', function(userObj){
 
 socket.on('friends list', function(friends){   // it remained, for online and unread users
     for(var i = 0 ; i < friends.length ; i++) {
-        $('#roster').append("<a class='blue item'>" + friends[i].username + "</a>");
+        $('#roster').append("<a class='active green item'>" + friends[i].username + "</a>");
     }
 });
 
