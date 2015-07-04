@@ -1,4 +1,6 @@
 // nodemon index.js
+//mongod --smallfiles: runinng server
+//mongo :running client
 // avalesh ke vasl mishe hame friend hashu befreste
 
 var express = require('express');
@@ -12,6 +14,12 @@ var io = require('socket.io')(http);
 
 io = require('socket.io').listen(server);
 
+
+var mongodb = require('mongodb');
+var mongo_client = mongodb.MongoClient;
+mongo_client.connect("mongodb://127.0.0.1:27017/chat", function(err, db){
+    console.log(err);
+});
 
 //var socket = io.listen(1223, "1.2.3.4");
 
@@ -59,6 +67,13 @@ io.sockets.on('connection', function(client){
         for(var i = 0 ; i < _.keys(users).length ; i++) {
             if(users[_.keys(users)[i]].username == target){
                 target_user = users[_.keys(users)[i]];
+
+                for(var i = 0 ; i < messages.length ; i++){
+                    if((messages[i].from_username == users[my_id].username && messages[i].to_username == target_user.username)
+                        || (messages[i].from_username == target_user.username && messages[i].to_username == users[my_id].username)){
+                        client.emit('chat message', messages[i]);
+                    }
+                }
                 console.log(target_user.username);
                 target_user_id = _.keys(users)[i];
                 break;
@@ -129,7 +144,6 @@ io.sockets.on('connection', function(client){
     });
 
     client.on('join', function(userObj){
-
         usr.username = userObj.username;
         usr.full_name = userObj.full_name;
         usr.socket = client;
@@ -153,6 +167,15 @@ io.sockets.on('connection', function(client){
 
         client.emit('info', userObj);  //socket just for a user, io for all connected users
 
+        //online handler
+        for(var i = 0 ; i < users[my_id].friends.length ; i++){
+            for(var j = 0 ; j < _.keys(users).length ; j++){
+                if(users[my_id].friends[i].username == users[_.keys(users)[j]].username){
+                    // username which went offline , friends which are friends of target for iterate over them
+                    users[_.keys(users)[j]].socket.emit('goes online', {username: users[my_id].username, 'friends': users[_.keys(users)[j]].friends});
+                }
+            }
+        }
         //io.sockets.emit("join_notife", usr.full_name + "has joined!");
 
         //for(var i = 0 ; i < users.length ; i++) {
@@ -169,6 +192,21 @@ io.sockets.on('connection', function(client){
         //        }
         //    }
         //}
+        if(my_id != undefined) {  //first refresh needs this
+            for (var i = 0; i < users[my_id].friends.length; i++) { //my friends
+                for (var j = 0; j < _.keys(users).length; j++) {    //objects of my friends
+                    if (users[my_id].friends[i].username == users[_.keys(users)[j]].username) {
+                        // username which went offline , friends which are friends of target for iterate over them
+                        users[_.keys(users)[j]].socket.emit('goes offline', {
+                            username: users[my_id].username,
+                            'friends': users[_.keys(users)[j]].friends
+                        });
+                    }
+                }
+            }
+        }
+        //io.sockets.emit('goes offline', {username: users[my_id].username, 'friends': );
+        //client.emit('goes offline', )
         console.log('user disconnected');
     });
 

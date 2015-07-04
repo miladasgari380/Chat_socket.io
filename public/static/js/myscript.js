@@ -9,6 +9,7 @@ $( document ).ready(function() {
     $('#modal.ui.modal')
         .modal("show")
     ;
+    $('#messages-pane').hide();
 });
 
 $('#myform.ui.form').submit(function(){
@@ -49,7 +50,7 @@ socket.on('chat message', function(msg){
 socket.on('add friend success', function(friend){
     console.log("add friend success");
     console.log(new Date());
-    $('#roster').append("<a class='active green item'>"+friend.username+"</a>");
+    $('#roster').append("<a class='active green item' username="+friend.username+">"+friend.username+"</a>");
     $("#add_user").val('');
     return false;
 });
@@ -62,20 +63,32 @@ socket.on('info', function(userObj){
 
 socket.on('friends list', function(friends){   // it remained, for online and unread users
     for(var i = 0 ; i < friends.length ; i++) {
-        $('#roster').append("<a class='active green item'>" + friends[i].username + "</a>");
+        $('#roster').append("<a class='active green item' username="+friends[i].username+">" + friends[i].username + "</a>");
     }
 });
 
 $('#roster').on("click",'a',function(){
-    current_target = $(this).html();
+    current_target = $(this).text();
+    $('#messages-pane').show();
     console.log("current_target: "+current_target);
     socket.emit('target message', current_target);
     $('#messages .ui.minimal.comments').html('');
     return false;
 });
 
+socket.on('goes offline', function(data){
+    if(data != undefined) {
+        console.log(data.username + " went offline!");
+        $("#roster a[username=" + data.username + "]").removeClass('active green');
+        $("#roster a[username=" + data.username + "]").addClass('blue');
+    }
+});
 
-
+socket.on('goes online', function(data){
+    console.log(data.username+" is online!");
+    $("#roster a[username="+data.username+"]").removeClass('blue');
+    $("#roster a[username="+data.username+"]").addClass('active green');
+});
 
 //$('#info.ui.form.segment').submit(function(){
 //    socket.emit('full name', $('#fullname').val());
