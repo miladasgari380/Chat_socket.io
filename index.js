@@ -36,6 +36,7 @@ function User() {
     var username = undefined;
     var socket;
     var friends = new Array;
+    var status;  // true: online, false: offline
 }
 
 function Message(){
@@ -68,10 +69,10 @@ io.sockets.on('connection', function(client){
             if(users[_.keys(users)[i]].username == target){
                 target_user = users[_.keys(users)[i]];
 
-                for(var i = 0 ; i < messages.length ; i++){
-                    if((messages[i].from_username == users[my_id].username && messages[i].to_username == target_user.username)
-                        || (messages[i].from_username == target_user.username && messages[i].to_username == users[my_id].username)){
-                        client.emit('chat message', messages[i]);
+                for(var j = 0 ; j < messages.length ; j++){
+                    if((messages[j].from_username == users[my_id].username && messages[j].to_username == target_user.username)
+                        || (messages[j].from_username == target_user.username && messages[j].to_username == users[my_id].username)){
+                        client.emit('chat message', messages[j]);
                     }
                 }
                 console.log(target_user.username);
@@ -148,6 +149,7 @@ io.sockets.on('connection', function(client){
         usr.full_name = userObj.full_name;
         usr.socket = client;
         usr.friends = [];
+        usr.status = true;
         var hasUser = false;
         for(var i = 0 ; i < _.keys(users).length ; i++){
             if(users[_.keys(users)[i]].username == userObj.username){
@@ -204,6 +206,7 @@ io.sockets.on('connection', function(client){
                     }
                 }
             }
+            users[my_id].status = false;
         }
         //io.sockets.emit('goes offline', {username: users[my_id].username, 'friends': );
         //client.emit('goes offline', )
