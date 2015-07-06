@@ -78,7 +78,12 @@ socket.on('info', function(userObj){
 
 socket.on('friends list', function(friends){   // it remained, for online and unread users
     for(var i = 0 ; i < friends.length ; i++) {
-        $('#roster').append("<a class='active green item' username="+friends[i].username+"><span>" + friends[i].username + "</span></a>");
+        if(friends[i].status == true) {
+            $('#roster').append("<a class='active green item' username=" + friends[i].username + "><span>" + friends[i].username + "</span></a>");
+        }
+        else{
+            $('#roster').append("<a class='blue item' username=" + friends[i].username + "><span>" + friends[i].username + "</span></a>");
+        }
     }
 });
 

@@ -13,22 +13,14 @@ var path = require('path');
 var io = require('socket.io')(http);
 
 io = require('socket.io').listen(server);
-
-
-var mongodb = require('mongodb');
-var mongo_client = mongodb.MongoClient;
-mongo_client.connect("mongodb://127.0.0.1:27017/chat", function(err, db){
-    console.log(err);
-});
-
 //var socket = io.listen(1223, "1.2.3.4");
-
 server.listen(3000);
 console.log("listening on 3000");
 
 function temp_friend(){
     var full_name = undefined;
     var username = undefined;
+    var status = undefined;
 }
 
 function User() {
@@ -56,7 +48,53 @@ app.get('/', function(req, res){
     });
 });
 
+//database
+var mongodb = require('mongodb');
+var global_database;
+var user_collection;
+var message_collection;
+
+var mongo_client = mongodb.MongoClient;
+
+var url = "mongodb://127.0.0.1:27017/chat";
+mongo_client.connect(url, function(err, db){
+    console.log(err);
+    if (err) {
+        console.log('Unable to connect to the mongoDB server. Error:', err);
+    } else {
+        console.log('Connection established to', url);
+        // do some work here with the database.
+        global_database = db;
+        user_collection = global_database.collection('users');
+        message_collection = global_database.collection('messages');
+
+        user_collection.find({}).toArray(function(err, result){
+            if (err) {
+                console.log(err);
+            } else if (result.length) {
+                console.log(result.length);
+                // update my_id remained
+                for(var i = 0 ; i < result.length ; i++){
+                    var usr = new User();
+                    usr.full_name = result[i].full_name;
+                    usr.username = result[i].username;
+                    usr.friends = result[i].friends;
+                    usr.status = result[i].status;
+                    users[result[i].my_id] = usr;
+                }
+                console.log('Found:', result);
+                //console.log(result[0].full_name);
+            } else {
+                console.log('No document(s) found with defined "find" criteria!');
+            }
+        });
+
+        //db.close();
+    }
+});
+
 io.sockets.on('connection', function(client){
+    console.log(users);
     var usr = new User();
     var target_user;
     var target_user_id;
@@ -83,7 +121,7 @@ io.sockets.on('connection', function(client){
     });
 
     client.on('chat message', function(message){
-        var mymsg = {};//new Message();
+        var mymsg = {}; //new Message();
         mymsg.from_username = users[my_id].username;//users[client.id];
         mymsg.from_full_name = users[my_id].full_name;//users[client.id];
         mymsg.to_username = target_user.username;
@@ -91,22 +129,6 @@ io.sockets.on('connection', function(client){
         mymsg.text = message;
         mymsg.time = new Date();
         messages.push(mymsg);
-        //for (var i = 0 ; i < users[client.id].friends.length ; i++){
-        //    if(target_user.username == users[client.id].friends[i].username){
-        //        target_user.socket.emit('add friend success', users[client.id].friends[i]);
-        //        break;
-        //    }
-        //}
-        //var me = new temp_friend();
-        //me.full_name = users[client.id].full_name;
-        //me.username = users[client.id].username;
-        //for(var i = 0 ; i < _.keys(users).length ; i++) {
-        //    if(users[_.keys(users)[i]].username == target_user.username) {
-        //        users[_.keys(users)[i]].friends.push(me);
-        //        console.log("add to target friends successful");
-        //    }
-        //}
-        //target_user.socket.emit('add friend success', me);
         client.emit('chat message', mymsg);
         target_user.socket.emit('chat message', mymsg);
     });
@@ -120,22 +142,43 @@ io.sockets.on('connection', function(client){
                 var friend = new temp_friend();
                 friend.full_name = users[_.keys(users)[i]].full_name;
                 friend.username = users[_.keys(users)[i]].username;
-                users[client.id].friends.push(friend);
+                friend.status = true; //default: we can add online friends.
+                users[my_id].friends.push(friend);
+
+                user_collection.update({username: users[my_id].username}, {$set:{friends: users[my_id].friends}}, function(err, result){
+                   if(err){
+                       console.log(err);
+                   }
+                   else{
+                       console.log("friends results: "+result);
+                   }
+                });
+
                 notFind = true;
                 client.emit('add friend success', friend);
 
                 var me = new temp_friend();
-                me.full_name = users[client.id].full_name;
-                me.username = users[client.id].username;
+                me.full_name = users[my_id].full_name;
+                me.username = users[my_id].username;
+                me.status = true;
                 for(var i = 0 ; i < _.keys(users).length ; i++) {
                     if(users[_.keys(users)[i]].username == friend.username) {
                         users[_.keys(users)[i]].friends.push(me);
+
+                        user_collection.update({username: friend.username}, {$set:{friends: users[_.keys(users)[i]].friends}}, function(err, result){
+                            if(err){
+                                console.log(err);
+                            }
+                            else{
+                                console.log("friends results: "+result);
+                            }
+                        });
+
                         console.log("add to target friends successful");
                         users[_.keys(users)[i]].socket.emit('add friend success', me);
                         break;
                     }
                 }
-                //console.log(users[client.id].friends[0].full_name);
                 break;
             }
         }
@@ -157,13 +200,34 @@ io.sockets.on('connection', function(client){
                 users[_.keys(users)[i]].socket = client;
                 client.emit('friends list', users[_.keys(users)[i]].friends);
                 my_id = _.keys(users)[i];
+                console.log("be tarz ajibi umad inja");
                 break;
             }
         }
         if(!hasUser) { // if we have not this user
-            //console.log("Client id: "+client.id);
-            users[client.id] = usr;
+            //users[client.id] = usr;
             my_id = client.id;
+
+            ////////////////databese//////////////////
+            var user = {full_name: usr.full_name , username: usr.username, my_id: my_id ,status: usr.status, friends: usr.friends};
+            user_collection.insert(user, function(err, result){
+               if (err){
+                   console.log(err);
+               }
+               else{
+                   console.log("Inserted %d user into database", result.length);
+               }
+            });
+            /////////////////////////////////////////
+            //user_collection.find({username: "Milad"}).toArray(function(err, result){
+            //    if (err) {
+            //        console.log(err);
+            //    } else if (result.length) {
+            //        console.log('Found:', result);
+            //    } else {
+            //        console.log('No document(s) found with defined "find" criteria!');
+            //    }
+            //});
             //console.log(users[client.id]);
         }
 
@@ -174,42 +238,39 @@ io.sockets.on('connection', function(client){
             for(var j = 0 ; j < _.keys(users).length ; j++){
                 if(users[my_id].friends[i].username == users[_.keys(users)[j]].username){
                     // username which went offline , friends which are friends of target for iterate over them
-                    users[_.keys(users)[j]].socket.emit('goes online', {username: users[my_id].username, 'friends': users[_.keys(users)[j]].friends});
-                }
-            }
-        }
-        //io.sockets.emit("join_notife", usr.full_name + "has joined!");
-
-        //for(var i = 0 ; i < users.length ; i++) {
-        //    console.log(users[i].username);
-        //}
-    });
-
-    client.on('disconnect', function(){
-        //for(var i = 0 ; i < users.length ; i++){
-        //    if(users[i].socket === socket){
-        //        if (i > -1) {
-        //            users.splice(i, 1);
-        //            break;
-        //        }
-        //    }
-        //}
-        if(my_id != undefined) {  //first refresh needs this
-            for (var i = 0; i < users[my_id].friends.length; i++) { //my friends
-                for (var j = 0; j < _.keys(users).length; j++) {    //objects of my friends
-                    if (users[my_id].friends[i].username == users[_.keys(users)[j]].username) {
-                        // username which went offline , friends which are friends of target for iterate over them
-                        users[_.keys(users)[j]].socket.emit('goes offline', {
+                    if(users[_.keys(users)[j]].socket != undefined) {
+                        users[_.keys(users)[j]].status = true;
+                        users[_.keys(users)[j]].socket.emit('goes online', {
                             username: users[my_id].username,
                             'friends': users[_.keys(users)[j]].friends
                         });
                     }
                 }
             }
+        }
+    });
+
+    client.on('disconnect', function(){
+        if(my_id != undefined && users[my_id] != undefined) {  //first refresh needs this
+            for (var i = 0; i < users[my_id].friends.length; i++) { //my friends
+                for (var j = 0; j < _.keys(users).length; j++) {    //objects of my friends
+                    if (users[my_id].friends[i].username == users[_.keys(users)[j]].username) {
+                        // username which went offline , friends which are friends of target for iterate over them
+                        if(users[_.keys(users)[j]].socket != undefined) { // friendash bayad online bashan ta befrestam. offline socket e nadare.
+                            users[_.keys(users)[j]].status = false;
+                            users[_.keys(users)[j]].socket.emit('goes offline', {
+                                username: users[my_id].username,
+                                status: 0,
+                                'friends': users[_.keys(users)[j]].friends
+                            });
+                        }
+
+                    }
+                }
+            }
             users[my_id].status = false;
         }
         //io.sockets.emit('goes offline', {username: users[my_id].username, 'friends': );
-        //client.emit('goes offline', )
         console.log('user disconnected');
     });
 
